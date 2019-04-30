@@ -24,22 +24,22 @@ typedef struct {
 } ts_map_t;
 
 typedef struct {
-  double x[TS_SCAN_SIZE], y[TS_SCAN_SIZE];
+  float x[TS_SCAN_SIZE], y[TS_SCAN_SIZE];
   int value[TS_SCAN_SIZE];
   int nb_points;
 } ts_scan_t;
 
 typedef struct {
-  double x, y; // mm
-  double theta; // radians
+  float x, y; // mm
+  float theta; // radians
 } ts_position_t;
 
 /* vuw functions */
 void vuw_slam_init();
 int vuw_slam_test() { return 42; }
 void vuw_get_slam_map(ts_map_pixel_t map[TS_MAP_SIZE * TS_MAP_SIZE]);
-void vuw_process_lidar(double *magnitude, double *theta, double *x_out, double *y_out, int nb_points, double d_x, double d_y, double d_theta);
-void vuw_slam_update(double *x, double *y, int nb_points, double *est_x, double *est_y, double *est_theta, int iterations);
+void vuw_process_lidar(float *magnitude, float *theta, float *x_out, float *y_out, int nb_points, float d_x, float d_y, float d_theta);
+void vuw_slam_update(float *x, float *y, int nb_points, float *est_x, float *est_y, float *est_theta, int iterations);
 ts_position_t vuw_slam_optimise(ts_scan_t *scan, ts_map_t *map, ts_position_t p, int p_score, ts_position_t s, int n);
 
 /* tiny slam functions */

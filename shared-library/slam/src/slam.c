@@ -35,15 +35,15 @@ void vuw_get_slam_map(ts_map_pixel_t map[TS_MAP_SIZE * TS_MAP_SIZE]) {
  * @param d_linear the delta in linear movement during the lidar scan in mm.
  * @param d_theta the delta in rotation during the lidar scan in radians.
  */
-void vuw_process_lidar(double *magnitude, double *theta, double *x_out, double *y_out, int nb_points, double d_x, double d_y, double d_theta) {
+void vuw_process_lidar(float *magnitude, float *theta, float *x_out, float *y_out, int nb_points, float d_x, float d_y, float d_theta) {
   int i;
   for (i = 0; i != nb_points; i++) {
-	  double d_x_at_i = d_x * ((double)i) / ((double)(nb_points-1));
-	  double d_y_at_i = d_y * ((double)i) / ((double)(nb_points-1));
-	  double rotation_at_i = d_theta * ((double)i) / ((double)(nb_points-1));
-	  double dx =  d_x - d_x_at_i;
-	  double dy =  d_y - d_y_at_i;
-	  double dt =  d_theta - rotation_at_i;
+	  float d_x_at_i = d_x * ((float)i) / ((float)(nb_points-1));
+	  float d_y_at_i = d_y * ((float)i) / ((float)(nb_points-1));
+	  float rotation_at_i = d_theta * ((float)i) / ((float)(nb_points-1));
+	  float dx =  d_x - d_x_at_i;
+	  float dy =  d_y - d_y_at_i;
+	  float dt =  d_theta - rotation_at_i;
 	  x_out[i] = magnitude[i]*cos(theta[i] + dt) + dx;
 	  y_out[i] = magnitude[i]*sin(theta[i] + dt) + dy;
   }
@@ -58,14 +58,14 @@ void vuw_process_lidar(double *magnitude, double *theta, double *x_out, double *
  * @param est_y estimated current y position in mm.
  * @param est_theta estimated current rotation in radians.
  */
-void vuw_slam_update(double *x, double *y, int nb_points, double *est_x, double *est_y, double *est_theta, int iterations) {
+void vuw_slam_update(float *x, float *y, int nb_points, float *est_x, float *est_y, float *est_theta, int iterations) {
   ts_scan_t scan;
   scan.nb_points = nb_points;
   int i;
   for(i = 0; i != nb_points; i++) {
     scan.x[i] = x[i];
     scan.y[i] = y[i];
-    double sq_dist = x[i]*x[i] + y[i]*y[i];
+    float sq_dist = x[i]*x[i] + y[i]*y[i];
     if(sq_dist >= TS_DISTANCE_NO_DETECTION*TS_DISTANCE_NO_DETECTION || sq_dist <= TS_DISTANCE_ERROR*TS_DISTANCE_ERROR) {
       scan.value[i] = TS_NO_OBSTACLE;
     } else {
@@ -112,11 +112,11 @@ ts_position_t vuw_slam_optimise(ts_scan_t *scan, ts_map_t *map, ts_position_t p,
   int best_np_score = 2000000000; // TODO p_score;
   int best_is_inside = 1;
   for(x = 0; x <= VUW_SEARCH_DIVISIONS; x++) {
-    np.x = p.x + (((double)x)/VUW_SEARCH_DIVISIONS - 0.5) * s.x;
+    np.x = p.x + (((float)x)/VUW_SEARCH_DIVISIONS - 0.5) * s.x;
     for(y = 0; y <= VUW_SEARCH_DIVISIONS; y++) {
-      np.y = p.y + (((double)y)/VUW_SEARCH_DIVISIONS - 0.5) * s.y;
+      np.y = p.y + (((float)y)/VUW_SEARCH_DIVISIONS - 0.5) * s.y;
       for(t = 0; t <= VUW_SEARCH_DIVISIONS; t++) {
-        np.theta = p.theta + (((double)t)/VUW_SEARCH_DIVISIONS - 0.5) * s.theta;
+        np.theta = p.theta + (((float)t)/VUW_SEARCH_DIVISIONS - 0.5) * s.theta;
         int score = ts_distance_scan_to_map(scan, map, &np);
         if(score < best_np_score) {
           best_np_score = score;
@@ -149,7 +149,7 @@ ts_position_t vuw_slam_optimise(ts_scan_t *scan, ts_map_t *map, ts_position_t p,
  */
 
 int ts_distance_scan_to_map(ts_scan_t *scan, ts_map_t *map, ts_position_t *pos) {
-  double c, s;
+  float c, s;
   int i, x, y, nb_points = 0;
   int64_t sum;
   c = cos(pos->theta);
@@ -184,10 +184,10 @@ void ts_map_init(ts_map_t *map) {
 }
 
 void ts_map_update(ts_scan_t *scan, ts_map_t *map, ts_position_t *pos, int quality) {
-  double c, s, q;
-  double x2p, y2p;
+  float c, s, q;
+  float x2p, y2p;
   int i, x1, y1, x2, y2, xp, yp, value;
-  double add, dist;
+  float add, dist;
   c = cos(pos->theta);
   s = sin(pos->theta);
   x1 = (int) floor(pos->x * TS_MAP_SCALE + 0.5);
@@ -215,7 +215,13 @@ void ts_map_update(ts_scan_t *scan, ts_map_t *map, ts_position_t *pos, int quali
   }
 }
 
-#define SWAP(x, y) ( x ^= y ^= x ^= y )
+#define SWAP(x, y) \
+{\
+	int temp = x;\
+	x = y;\
+	y = temp;\
+}
+
 void ts_map_laser_ray(ts_map_t *map, int x1, int y1, int x2, int y2, int xp, int yp, int value, int alpha) {
   int x2c, y2c, dx, dy, dxc, dyc, error, errorv, derrorv, x;
   int incv, sincv, incerrorv, incptrx, incptry, pixval, horiz, diago;
